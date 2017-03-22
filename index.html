@@ -9499,7 +9499,6 @@ var _elm_lang$svg$Svg_Attributes$accelerate = _elm_lang$virtual_dom$VirtualDom$a
 var _elm_lang$svg$Svg_Attributes$accentHeight = _elm_lang$virtual_dom$VirtualDom$attribute('accent-height');
 var _user$project$Main$updateColor = F2(
 	function (model, deltaT) {
-		var fillColor = _elm_lang$core$Native_Utils.eq(model.fillColor, '#0B79CE') ? '#fe57a1' : '#0B79CE';
 		var mil = _elm_lang$core$Basics$round(
 			_elm_lang$core$Time$inMilliseconds(model.increment));
 		var br = model.interval;
@@ -9517,16 +9516,54 @@ var _user$project$Main$updateColor = F2(
 				increment: model.increment - _elm_lang$core$Basics$toFloat(ms)
 			}));
 	});
-var _user$project$Main$updateBpm = F2(
-	function (model, newBpm) {
+var _user$project$Main$updateBeatCount = F2(
+	function (model, beatCount) {
+		var interval = (60000 / (beatCount * model.bpm)) | 0;
 		return _elm_lang$core$Native_Utils.update(
 			model,
-			{bpm: newBpm});
+			{beatCount: beatCount, interval: interval});
+	});
+var _user$project$Main$updateBpm = F2(
+	function (model, newBpm) {
+		var interval = (60000 / (model.beatCount * newBpm)) | 0;
+		return _elm_lang$core$Native_Utils.update(
+			model,
+			{bpm: newBpm, interval: interval});
 	});
 var _user$project$Main$update = F2(
 	function (msg, model) {
 		var _p0 = msg;
 		switch (_p0.ctor) {
+			case 'KeyMsg':
+				var _p1 = _p0._0;
+				switch (_p1) {
+					case 37:
+						return {
+							ctor: '_Tuple2',
+							_0: A2(_user$project$Main$updateBeatCount, model, model.beatCount - 1),
+							_1: _elm_lang$core$Platform_Cmd$none
+						};
+					case 38:
+						return {
+							ctor: '_Tuple2',
+							_0: A2(_user$project$Main$updateBpm, model, model.bpm + 1),
+							_1: _elm_lang$core$Platform_Cmd$none
+						};
+					case 39:
+						return {
+							ctor: '_Tuple2',
+							_0: A2(_user$project$Main$updateBeatCount, model, model.beatCount + 1),
+							_1: _elm_lang$core$Platform_Cmd$none
+						};
+					case 40:
+						return {
+							ctor: '_Tuple2',
+							_0: A2(_user$project$Main$updateBpm, model, model.bpm - 1),
+							_1: _elm_lang$core$Platform_Cmd$none
+						};
+					default:
+						return {ctor: '_Tuple2', _0: model, _1: _elm_lang$core$Platform_Cmd$none};
+				}
 			case 'TimeUpdate':
 				return {
 					ctor: '_Tuple2',
@@ -9535,16 +9572,30 @@ var _user$project$Main$update = F2(
 				};
 			case 'BpmUpdate':
 				var intBpm = function () {
-					var _p1 = _elm_lang$core$String$toInt(_p0._0);
-					if (_p1.ctor === 'Err') {
+					var _p2 = _elm_lang$core$String$toInt(_p0._0);
+					if (_p2.ctor === 'Err') {
 						return 0;
 					} else {
-						return _p1._0;
+						return _p2._0;
 					}
 				}();
 				return {
 					ctor: '_Tuple2',
 					_0: A2(_user$project$Main$updateBpm, model, intBpm),
+					_1: _elm_lang$core$Platform_Cmd$none
+				};
+			case 'BeatUpdate':
+				var beatCount = function () {
+					var _p3 = _elm_lang$core$String$toInt(_p0._0);
+					if (_p3.ctor === 'Err') {
+						return 0;
+					} else {
+						return _p3._0;
+					}
+				}();
+				return {
+					ctor: '_Tuple2',
+					_0: A2(_user$project$Main$updateBeatCount, model, beatCount),
 					_1: _elm_lang$core$Platform_Cmd$none
 				};
 			case 'StartRunning':
@@ -9565,9 +9616,8 @@ var _user$project$Main$update = F2(
 				};
 		}
 	});
-var _user$project$Main$br = 1000;
 var _user$project$Main$defaultBpm = 60;
-var _user$project$Main$defaultBeatCount = 2;
+var _user$project$Main$defaultBeatCount = 1;
 var _user$project$Main$Model = F7(
 	function (a, b, c, d, e, f, g) {
 		return {running: a, timeDiff: b, beatCount: c, bpm: d, fillColor: e, increment: f, interval: g};
@@ -9585,11 +9635,14 @@ var _user$project$Main$init = function () {
 		_1: _elm_lang$core$Platform_Cmd$none
 	};
 }();
+var _user$project$Main$KeyMsg = function (a) {
+	return {ctor: 'KeyMsg', _0: a};
+};
 var _user$project$Main$StopRunning = {ctor: 'StopRunning'};
 var _user$project$Main$StartRunning = {ctor: 'StartRunning'};
 var _user$project$Main$startButton = function (running) {
-	var _p2 = running;
-	if (_p2 === true) {
+	var _p4 = running;
+	if (_p4 === true) {
 		return A2(
 			_elm_lang$html$Html$button,
 			{
@@ -9617,6 +9670,12 @@ var _user$project$Main$startButton = function (running) {
 			});
 	}
 };
+var _user$project$Main$BeatUpdate = function (a) {
+	return {ctor: 'BeatUpdate', _0: a};
+};
+var _user$project$Main$BpmUpdate = function (a) {
+	return {ctor: 'BpmUpdate', _0: a};
+};
 var _user$project$Main$view = function (model) {
 	return A2(
 		_elm_lang$html$Html$div,
@@ -9628,44 +9687,71 @@ var _user$project$Main$view = function (model) {
 				{ctor: '[]'},
 				{
 					ctor: '::',
-					_0: _user$project$Main$startButton(model.running),
+					_0: A2(
+						_elm_lang$html$Html$label,
+						{ctor: '[]'},
+						{
+							ctor: '::',
+							_0: _elm_lang$html$Html$text('BPM'),
+							_1: {
+								ctor: '::',
+								_0: A2(
+									_elm_lang$html$Html$input,
+									{
+										ctor: '::',
+										_0: _elm_lang$svg$Svg_Attributes$type_('text'),
+										_1: {
+											ctor: '::',
+											_0: _elm_lang$html$Html_Attributes$value(
+												_elm_lang$core$Basics$toString(model.bpm)),
+											_1: {
+												ctor: '::',
+												_0: _elm_lang$html$Html_Events$onInput(_user$project$Main$BpmUpdate),
+												_1: {ctor: '[]'}
+											}
+										}
+									},
+									{ctor: '[]'}),
+								_1: {ctor: '[]'}
+							}
+						}),
 					_1: {ctor: '[]'}
 				}),
 			_1: {
 				ctor: '::',
 				_0: A2(
-					_elm_lang$svg$Svg$svg,
-					{
-						ctor: '::',
-						_0: _elm_lang$svg$Svg_Attributes$viewBox('0 0 100 100'),
-						_1: {
-							ctor: '::',
-							_0: _elm_lang$svg$Svg_Attributes$width('800px'),
-							_1: {ctor: '[]'}
-						}
-					},
+					_elm_lang$html$Html$div,
+					{ctor: '[]'},
 					{
 						ctor: '::',
 						_0: A2(
-							_elm_lang$svg$Svg$circle,
+							_elm_lang$html$Html$label,
+							{ctor: '[]'},
 							{
 								ctor: '::',
-								_0: _elm_lang$svg$Svg_Attributes$cx('50'),
+								_0: _elm_lang$html$Html$text('Beat Count'),
 								_1: {
 									ctor: '::',
-									_0: _elm_lang$svg$Svg_Attributes$cy('50'),
-									_1: {
-										ctor: '::',
-										_0: _elm_lang$svg$Svg_Attributes$r('45'),
-										_1: {
+									_0: A2(
+										_elm_lang$html$Html$input,
+										{
 											ctor: '::',
-											_0: _elm_lang$svg$Svg_Attributes$fill(model.fillColor),
-											_1: {ctor: '[]'}
-										}
-									}
+											_0: _elm_lang$svg$Svg_Attributes$type_('text'),
+											_1: {
+												ctor: '::',
+												_0: _elm_lang$html$Html_Attributes$value(
+													_elm_lang$core$Basics$toString(model.beatCount)),
+												_1: {
+													ctor: '::',
+													_0: _elm_lang$html$Html_Events$onInput(_user$project$Main$BeatUpdate),
+													_1: {ctor: '[]'}
+												}
+											}
+										},
+										{ctor: '[]'}),
+									_1: {ctor: '[]'}
 								}
-							},
-							{ctor: '[]'}),
+							}),
 						_1: {ctor: '[]'}
 					}),
 				_1: {
@@ -9675,33 +9761,44 @@ var _user$project$Main$view = function (model) {
 						{ctor: '[]'},
 						{
 							ctor: '::',
-							_0: A2(
-								_elm_lang$html$Html$h3,
-								{ctor: '[]'},
-								{
-									ctor: '::',
-									_0: _elm_lang$svg$Svg$text(
-										_elm_lang$core$Basics$toString(model.timeDiff)),
-									_1: {ctor: '[]'}
-								}),
+							_0: _user$project$Main$startButton(model.running),
 							_1: {ctor: '[]'}
 						}),
 					_1: {
 						ctor: '::',
 						_0: A2(
-							_elm_lang$html$Html$div,
-							{ctor: '[]'},
+							_elm_lang$svg$Svg$svg,
+							{
+								ctor: '::',
+								_0: _elm_lang$svg$Svg_Attributes$viewBox('0 0 100 100'),
+								_1: {
+									ctor: '::',
+									_0: _elm_lang$svg$Svg_Attributes$width('800px'),
+									_1: {ctor: '[]'}
+								}
+							},
 							{
 								ctor: '::',
 								_0: A2(
-									_elm_lang$html$Html$h3,
-									{ctor: '[]'},
+									_elm_lang$svg$Svg$circle,
 									{
 										ctor: '::',
-										_0: _elm_lang$svg$Svg$text(
-											_elm_lang$core$Basics$toString(model.interval)),
-										_1: {ctor: '[]'}
-									}),
+										_0: _elm_lang$svg$Svg_Attributes$cx('50'),
+										_1: {
+											ctor: '::',
+											_0: _elm_lang$svg$Svg_Attributes$cy('50'),
+											_1: {
+												ctor: '::',
+												_0: _elm_lang$svg$Svg_Attributes$r('45'),
+												_1: {
+													ctor: '::',
+													_0: _elm_lang$svg$Svg_Attributes$fill(model.fillColor),
+													_1: {ctor: '[]'}
+												}
+											}
+										}
+									},
+									{ctor: '[]'}),
 								_1: {ctor: '[]'}
 							}),
 						_1: {ctor: '[]'}
@@ -9710,16 +9807,22 @@ var _user$project$Main$view = function (model) {
 			}
 		});
 };
-var _user$project$Main$BpmUpdate = function (a) {
-	return {ctor: 'BpmUpdate', _0: a};
-};
 var _user$project$Main$TimeUpdate = function (a) {
 	return {ctor: 'TimeUpdate', _0: a};
 };
 var _user$project$Main$subscriptions = function (model) {
-	var _p3 = model.running;
-	if (_p3 === true) {
-		return _elm_lang$animation_frame$AnimationFrame$diffs(_user$project$Main$TimeUpdate);
+	var _p5 = model.running;
+	if (_p5 === true) {
+		return _elm_lang$core$Platform_Sub$batch(
+			{
+				ctor: '::',
+				_0: _elm_lang$animation_frame$AnimationFrame$diffs(_user$project$Main$TimeUpdate),
+				_1: {
+					ctor: '::',
+					_0: _elm_lang$keyboard$Keyboard$downs(_user$project$Main$KeyMsg),
+					_1: {ctor: '[]'}
+				}
+			});
 	} else {
 		return _elm_lang$core$Platform_Sub$none;
 	}
